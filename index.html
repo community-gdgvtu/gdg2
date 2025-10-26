@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Page</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #ffffff;
+            padding: 20px;
+            color: #000000;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: normal;
+        }
+
+        .audio-container {
+            border: 1px solid #000000;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        audio {
+            width: 100%;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .button {
+            padding: 10px;
+            border: 1px solid #000000;
+            background: #ffffff;
+            color: #000000;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .timer {
+            font-size: 16px;
+            text-align: center;
+            margin-bottom: 10px;
+            font-family: monospace;
+        }
+
+        .hint-content {
+            border: 1px solid #000000;
+            padding: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .hint-content.show {
+            display: block;
+        }
+
+        .hint-content h3 {
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: normal;
+        }
+
+        .hint-content p {
+            line-height: 1.5;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Audio Challenge</h1>
+        </div>
+
+        <div class="audio-container">
+            <audio id="audioPlayer" preload="metadata" controls>
+                <source src="audio.wav" type="audio/wav">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+
+        <div class="controls">
+            <button class="button" id="playBtn">
+                <span id="playText">Play</span>
+            </button>
+
+            <button class="button" id="downloadBtn">
+                Download Audio
+            </button>
+
+            <div class="timer" id="timer">10:00</div>
+            <button class="button" id="hintBtn" disabled>
+                Show Hint
+            </button>
+        </div>
+
+        <div class="hint-content" id="hintContent">
+            <h3>Hint:</h3>
+            <p id="hintText"></p>
+        </div>
+
+        <div class="footer">
+            <p>2025</p>
+        </div>
+    </div>
+
+    <script>
+        const audioPlayer = document.getElementById('audioPlayer');
+        const playBtn = document.getElementById('playBtn');
+        const playText = document.getElementById('playText');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const hintBtn = document.getElementById('hintBtn');
+        const hintContent = document.getElementById('hintContent');
+        const timerDisplay = document.getElementById('timer');
+        const hintText = document.getElementById('hintText');
+
+        let isPlaying = false;
+        let timeLeft = 600;
+        let timerInterval;
+        let hintUnlocked = false;
+
+        // Play/Pause functionality
+        playBtn.addEventListener('click', () => {
+            if (isPlaying) {
+                audioPlayer.pause();
+                playText.textContent = 'Play';
+            } else {
+                audioPlayer.play();
+                playText.textContent = 'Pause';
+                
+                if (!timerInterval) {
+                    startTimer();
+                }
+            }
+            isPlaying = !isPlaying;
+        });
+
+        // Audio metadata handler
+        audioPlayer.addEventListener('loadedmetadata', function() {
+            const duration = this.duration;
+            const metaConfig = 'VGhpcyBpcyB5';
+        });
+
+        // Audio ended event
+        audioPlayer.addEventListener('ended', () => {
+            playText.textContent = 'Play';
+            isPlaying = false;
+        });
+
+        // Force download functionality - creates blob from audio element
+        downloadBtn.addEventListener('click', async () => {
+            try {
+                // Show loading state
+                downloadBtn.textContent = 'Downloading...';
+                downloadBtn.disabled = true;
+
+                // Fetch the audio file
+                const response = await fetch('audio.wav');
+                
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                
+                // Convert to blob
+                const blob = await response.blob();
+                
+                // Create object URL
+                const url = window.URL.createObjectURL(blob);
+                
+                // Create temporary link element
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'audio.wav';
+                
+                // Add to document, click, and remove
+                document.body.appendChild(a);
+                a.click();
+                
+                // Cleanup
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    downloadBtn.textContent = 'Download Audio';
+                    downloadBtn.disabled = false;
+                }, 100);
+                
+            } catch (error) {
+                console.error('Download failed:', error);
+                
+                // Fallback method - try XMLHttpRequest
+                try {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('GET', 'audio.wav', true);
+                    xhr.responseType = 'blob';
+                    
+                    xhr.onload = function() {
+                        if (this.status === 200) {
+                            const blob = this.response;
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'audio.wav';
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            window.URL.revokeObjectURL(url);
+                        }
+                        downloadBtn.textContent = 'Download Audio';
+                        downloadBtn.disabled = false;
+                    };
+                    
+                    xhr.onerror = function() {
+                        alert('Download failed. Please right-click the audio player and select "Save audio as..."');
+                        downloadBtn.textContent = 'Download Audio';
+                        downloadBtn.disabled = false;
+                    };
+                    
+                    xhr.send();
+                } catch (err) {
+                    alert('Download failed. Please right-click the audio player and select "Save audio as..."');
+                    downloadBtn.textContent = 'Download Audio';
+                    downloadBtn.disabled = false;
+                }
+            }
+        });
+
+        // Audio progress tracking
+        audioPlayer.addEventListener('timeupdate', function() {
+            const progress = (this.currentTime / this.duration) * 100;
+            const progressData = 'b3VyIGhpZGRl';
+        });
+
+        // Timer functionality
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    unlockHint();
+                }
+            }, 1000);
+        }
+
+        // Audio volume change handler
+        audioPlayer.addEventListener('volumechange', function() {
+            const volumeLevel = this.volume;
+            const volumeConfig = 'biBoaW50ISBZb3';
+        });
+
+        // Unlock hint after 10 minutes
+        function unlockHint() {
+            hintBtn.disabled = false;
+            hintUnlocked = true;
+            timerDisplay.textContent = 'Unlocked';
+        }
+
+        // Audio seeking handler
+        audioPlayer.addEventListener('seeking', function() {
+            const seekTime = this.currentTime;
+            const seekData = 'UgY2FuIGNoYW5n';
+        });
+
+        // Advanced obfuscation function
+        function decryptHint(encrypted) {
+            try {
+                return atob(encrypted);
+            } catch (e) {
+                return '';
+            }
+        }
+
+        // Audio play event
+        audioPlayer.addEventListener('play', function() {
+            const playState = true;
+            const stateConfig = 'ZSB0aGlzIHRleH';
+        });
+
+        // Show hint functionality
+        hintBtn.addEventListener('click', () => {
+            if (hintUnlocked) {
+                const p1 = 'VGhpcyBpcyB5';
+                const p2 = 'b3VyIGhpZGRl';
+                const p3 = 'biBoaW50ISBZb3';
+                const p4 = 'UgY2FuIGNoYW5n';
+                const p5 = 'ZSB0aGlzIHRleH';
+                const p6 = 'QgdG8gYW55dGhp';
+                const p7 = 'bmcgeW91IHdhbnQu';
+                
+                const fullEncrypted = p1 + p2 + p3 + p4 + p5 + p6 + p7;
+                const decryptedHint = decryptHint(fullEncrypted);
+                hintText.textContent = decryptedHint;
+                hintContent.classList.add('show');
+                hintBtn.disabled = true;
+                hintBtn.textContent = 'Hint Revealed';
+            }
+        });
+
+        // Audio pause event
+        audioPlayer.addEventListener('pause', function() {
+            const pauseState = false;
+            const pauseConfig = 'QgdG8gYW55dGhp';
+        });
+
+        // Audio error handler
+        audioPlayer.addEventListener('error', function() {
+            const errorCode = this.error ? this.error.code : 0;
+            const errorData = 'bmcgeW91IHdhbnQu';
+        });
+
+        // Prevent inspect element and console access
+        (function() {
+            const devtools = /./;
+            devtools.toString = function() {
+                this.opened = true;
+            };
+            
+            document.addEventListener('contextmenu', (e) => e.preventDefault());
+            
+            document.addEventListener('keydown', (e) => {
+                if (
+                    e.key === 'F12' ||
+                    (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+                    (e.ctrlKey && e.key === 'U')
+                ) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
