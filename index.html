@@ -110,10 +110,7 @@
         </div>
 
         <div class="hint-content" id="hintContent">
-            <p><strong>Hint:</strong> May be you’ll need to decrypt this first to uncover the hidden message.
-Once it’s revealed, follow the riddle carefully—it holds the next step.
-Listen closely to the audio file after decryption; within its layers lies your clue.
-Only by decoding the sound will you discover what must be done next.</p>
+            <p><strong>Hint:</strong> May be you should try decrypting this to get the book.. and then follow the riddle as said. Please go to the last line after decrypting the audio, and finding what to be done.</p>
         </div>
     </div>
 
@@ -125,6 +122,19 @@ Only by decoding the sound will you discover what must be done next.</p>
         const hintBtn = document.getElementById('hintBtn');
         const hintContent = document.getElementById('hintContent');
         const isFileProtocol = window.location.protocol === 'file:';
+
+        // Change the URL displayed in the address bar (dummy URL)
+        function setDummyURL() {
+            const dummyURL = '/philosopher-cipher/challenge';
+            if (window.history && window.history.pushState) {
+                window.history.pushState({}, document.title, dummyURL);
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            setDummyURL();
+        });
 
         // Play button functionality
         playBtn.addEventListener('click', () => {
@@ -140,7 +150,6 @@ Only by decoding the sound will you discover what must be done next.</p>
         audioPlayer.addEventListener('ended', () => {
              playBtn.textContent = 'PLAY';
         });
-
 
         // Download button functionality
         downloadBtn.addEventListener('click', () => {
@@ -178,4 +187,3 @@ Only by decoding the sound will you discover what must be done next.</p>
     </script>
 </body>
 </html>
-
